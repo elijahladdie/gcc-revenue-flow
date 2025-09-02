@@ -7,6 +7,15 @@ import { Provider } from 'react-redux';
 import { store } from '@/store';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { Dashboard } from '@/pages/Dashboard';
+import Patients from './pages/Patients';
+import Claims from './pages/Claims';
+import PreAuthorization from './pages/PreAuthorization';
+import Financial from './pages/Financial';
+import Analytics from './pages/Analytics';
+import Compliance from './pages/Compliance';
+import Trends from './pages/Trends';
+import VerifyEligibility from './pages/VerifyEligibility';
+import ReviewDenials from './pages/ReviewDenials';
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,7 +30,15 @@ const App = () => (
           <Routes>
             <Route path="/" element={<AppLayout />}>
               <Route index element={<Dashboard />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="patients" element={<Patients />} />
+              <Route path="claims" element={<Claims />} />
+              <Route path="pre-authorization" element={<PreAuthorization />} />
+              <Route path="financial" element={<Financial />} />
+              <Route path="analytics" element={<Analytics />} />
+              <Route path="compliance" element={<Compliance />} />
+              <Route path="trends" element={<Trends />} />
+              <Route path="verify-eligibility" element={<VerifyEligibility />} />
+              <Route path="review-denials" element={<ReviewDenials />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
