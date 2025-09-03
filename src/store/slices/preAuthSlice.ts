@@ -1,5 +1,3 @@
-// Pre-Authorization Redux Slice
-
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { PreAuthorization, PreAuthFilters } from '@/types/healthcare';
 import { mockPreAuthorizations } from '@/data/mockData';
@@ -48,14 +46,14 @@ export const fetchPreAuthorizations = createAsyncThunk(
       filteredPreAuths = filteredPreAuths.filter(p => p.status === filters.status);
     }
     if (filters.treatmentCategory) {
-      filteredPreAuths = filteredPreAuths.filter(p => p.treatmentCategory === filters.treatmentCategory);
+      filteredPreAuths = filteredPreAuths.filter(p => p.treatment_category === filters.treatmentCategory);
     }
     if (filters.aiRecommendation) {
-      filteredPreAuths = filteredPreAuths.filter(p => p.aiRecommendation === filters.aiRecommendation);
+      filteredPreAuths = filteredPreAuths.filter(p => p.ai_recommendation === filters.aiRecommendation);
     }
     if (filters.riskLevel) {
       filteredPreAuths = filteredPreAuths.filter(p => {
-        const riskLevel = p.confidenceScore >= 80 ? 'low' : p.confidenceScore >= 50 ? 'medium' : 'high';
+        const riskLevel = p.confidence_score >= 80 ? 'low' : p.confidence_score >= 50 ? 'medium' : 'high';
         return riskLevel === filters.riskLevel;
       });
     }
@@ -63,8 +61,8 @@ export const fetchPreAuthorizations = createAsyncThunk(
       const searchTerm = filters.search.toLowerCase();
       filteredPreAuths = filteredPreAuths.filter(p => 
         p.id.toLowerCase().includes(searchTerm) ||
-        p.requestType.toLowerCase().includes(searchTerm) ||
-        p.medicalJustification.toLowerCase().includes(searchTerm)
+        p.request_type.toLowerCase().includes(searchTerm) ||
+        p.medical_justification.toLowerCase().includes(searchTerm)
       );
     }
     
@@ -82,12 +80,12 @@ export const createPreAuthorization = createAsyncThunk(
     await new Promise(resolve => setTimeout(resolve, 1200));
     
     // Simulate AI recommendation logic
-    const riskFactors = preAuthData.riskFactors || [];
+    const riskFactors = preAuthData.risk_factors || [];
     const baseConfidence = 85;
     const riskPenalty = riskFactors.length * 15;
     const confidenceScore = Math.max(20, baseConfidence - riskPenalty + Math.random() * 20);
     
-    let aiRecommendation: PreAuthorization['aiRecommendation'];
+    let aiRecommendation: PreAuthorization['ai_recommendation'];
     if (confidenceScore >= 85) {
       aiRecommendation = 'auto-approve';
     } else if (confidenceScore >= 50) {
@@ -99,11 +97,11 @@ export const createPreAuthorization = createAsyncThunk(
     const newPreAuth: PreAuthorization = {
       ...preAuthData,
       id: `pre-${Date.now()}`,
-      aiRecommendation,
-      confidenceScore: Math.round(confidenceScore),
+      ai_recommendation:aiRecommendation,
+      confidence_score: Math.round(confidenceScore),
       status: aiRecommendation === 'auto-approve' ? 'approved' : 'pending',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     
     return newPreAuth;
@@ -118,7 +116,7 @@ export const updatePreAuthStatus = createAsyncThunk(
     
     const updates: Partial<PreAuthorization> = {
       status,
-      updatedAt: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
     
     return { id, updates };

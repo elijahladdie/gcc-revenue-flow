@@ -3,16 +3,16 @@
 import { configureStore } from '@reduxjs/toolkit';
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux';
 import { patientsSlice } from './slices/patientsSlice';
-import { claimsSlice } from './slices/claimsSlice';
 import { preAuthSlice } from './slices/preAuthSlice';
+import { visitReducer } from './slices/visitSlice';
 import { analyticsSlice } from './slices/analyticsSlice';
 import { uiSlice } from './slices/uiSlice';
 
 export const store = configureStore({
   reducer: {
     patients: patientsSlice.reducer,
-    claims: claimsSlice.reducer,
     preAuth: preAuthSlice.reducer,
+    visit: visitReducer.reducer,
     analytics: analyticsSlice.reducer,
     ui: uiSlice.reducer,
   },

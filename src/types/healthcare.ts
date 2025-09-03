@@ -4,71 +4,76 @@ export type CountryCode = 'SA' | 'UAE' | 'KW' | 'BH' | 'QA' | 'OM';
 export type CurrencyCode = 'SAR' | 'AED' | 'KWD' | 'BHD' | 'QAR' | 'OMR';
 export type Language = 'en' | 'ar';
 
+export type MedicalHistoryItem = {
+  condition?: string;
+  diagnosis_date?: string;
+  notes?: string;
+}
 export interface Patient {
   id: string;
   name: string;
-  nameAr?: string;
+  name_ar?: string;
   nationality: 'citizen' | 'expatriate' | 'visitor';
-  insuranceType: 'CCHI' | 'NPHIES' | 'Private' | 'Government';
-  eligibilityStatus: 'verified' | 'pending' | 'rejected';
+  insurance_type: string;
+  eligibility_status: 'verified' | 'pending' | 'rejected' | 'new';
   country: CountryCode;
-  dateOfBirth: string;
+  date_of_birth: string;
   gender: 'male' | 'female';
-  phoneNumber: string;
+  phone_number: string;
   email?: string;
-  insuranceId: string;
-  emergencyContact?: {
+  insurance_id: string;
+  emergency_contact?: {
     name: string;
     phone: string;
     relationship: string;
   };
-  medicalHistory?: string[];
+  medical_history?: MedicalHistoryItem[];
   createdAt: string;
   updatedAt: string;
+}export interface Claim {
+  procedure_modifiers: string | null; // nullable
+  created_at: string; // ISO date string
+  insurance_provider_id: string; // UUID
+  charges: number; // was string, should be number
+  updated_at: string; // ISO date string
+  patient_id: string; // UUID
+  place_of_service: string; // e.g., "hospital"
+  id: string; // UUID
+  patient_dob: string; // date string
+  referring_provider_info: string | null; // nullable
+  visit_id: string; // UUID
+  insurance_policy_number: string;
+  total_claim_charges: number; // was string, should be number
+  pre_auth_id: string | null; // nullable
+  relationship_to_subscriber: "self" | "spouse" | "child" | string; // better to use union + fallback
+  denial_reason: string | null; // nullable
+  patient_name: string;
+  diagnosis: string[]; // array of strings
+  status: "approved" | "denied" | "pending" | string; // union for known statuses
+  procedures: string[]; // array of strings
+  submission_date: string; // ISO date string
 }
-
-export interface Claim {
-  id: string;
-  patientId: string;
-  amount: number;
-  currency: CurrencyCode;
-  status: 'draft' | 'submitted' | 'under-review' | 'approved' | 'denied' | 'pending-payment' | 'paid';
-  submissionDate: string;
-  diagnosis: string[];
-  procedures: string[];
-  providerId: string;
-  providerName: string;
-  facilityType: 'hospital' | 'clinic' | 'pharmacy' | 'lab' | 'imaging';
-  urgencyLevel: 'emergency' | 'urgent' | 'routine';
-  estimatedProcessingDays: number;
-  denialReason?: string;
-  approvalDate?: string;
-  paymentDate?: string;
-  notes?: string;
-  attachments?: string[];
-  createdAt: string;
-  updatedAt: string;
-}
-
 export interface PreAuthorization {
   id: string;
-  patientId: string;
-  requestType: string;
-  treatmentCategory: 'surgery' | 'medication' | 'imaging' | 'therapy' | 'consultation';
-  requestedAmount: number;
-  currency: CurrencyCode;
-  aiRecommendation: 'auto-approve' | 'manual-review' | 'high-risk';
-  confidenceScore: number; // 0-100
-  status: 'pending' | 'approved' | 'denied' | 'expired';
-  riskFactors: string[];
-  medicalJustification: string;
-  requiredDocuments: string[];
-  submittedDocuments: string[];
-  expectedApprovalDate: string;
-  validUntil: string;
-  createdAt: string;
-  updatedAt: string;
+  request_type: string; // e.g., "Specialist Consultation"
+  medical_justification: string;
+  treatment_category: string; // e.g., "consultation"
+  required_documents: string[];
+  visit_id: string;
+  requested_amount: number;
+  submitted_documents: string[];
+  currency: string; // e.g., "SAR"
+  expected_approval_date: string; // ISO timestamp
+  ai_recommendation: string; // e.g., "auto-approve"
+  valid_until: string; // ISO timestamp
+  confidence_score: number; // percentage (0–100)
+  created_at: string; // ISO timestamp
+  status: 'approved' | 'denied' | 'under-review' | 'submitted' | string; // expand as needed
+  updated_at: string; // ISO timestamp
+  patient_id: string;
+  risk_factors: string[];
 }
+
 
 export interface FinancialRecord {
   id: string;
@@ -176,8 +181,8 @@ export interface PaginatedResponse<T> {
 export interface PatientFilters {
   country?: CountryCode;
   nationality?: Patient['nationality'];
-  insuranceType?: Patient['insuranceType'];
-  eligibilityStatus?: Patient['eligibilityStatus'];
+  insuranceType?: Patient['insurance_type'];
+  eligibilityStatus?: Patient['eligibility_status'];
   search?: string;
 }
 
@@ -192,15 +197,23 @@ export interface ClaimFilters {
     min: number;
     max: number;
   };
-  facilityType?: Claim['facilityType'];
-  urgencyLevel?: Claim['urgencyLevel'];
   search?: string;
 }
 
 export interface PreAuthFilters {
   status?: PreAuthorization['status'];
-  treatmentCategory?: PreAuthorization['treatmentCategory'];
-  aiRecommendation?: PreAuthorization['aiRecommendation'];
+  treatmentCategory?: PreAuthorization['treatment_category'];
+  aiRecommendation?: PreAuthorization['ai_recommendation'];
   riskLevel?: 'low' | 'medium' | 'high';
   search?: string;
+}
+export interface Insurance {
+  id: string;
+  name: String;
+  address: String;
+  npi: String;
+  tax_id: String;
+  insurance_types: JSON;
+  country: String;
+  facility_type: String;
 }
