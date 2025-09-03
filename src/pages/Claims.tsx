@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -6,11 +6,18 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FileText, Clock, CheckCircle, XCircle, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
-import { mockClaims, mockPatients, countryInfo } from '@/data/mockData';
+import { countryInfo } from '@/data/mockData';
+import { RootState, useAppDispatch, useAppSelector } from '@/store';
+import { fetchPatients } from '@/store/slices/patientsSlice';
+import { fetchClaims } from '@/store/slices/visitSlice';
+import { Claim } from '@/types/healthcare';
 
 export default function Claims() {
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
-
+  const dispatch = useAppDispatch(); 
+  const { patients } = useAppSelector((state: RootState
+  ) => state.patients);
+  const { claims } = useAppSelector((state) => state.visit);
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'approved': return 'bg-success text-success-foreground';
@@ -20,7 +27,10 @@ export default function Claims() {
       default: return 'bg-muted text-muted-foreground';
     }
   };
-
+  useEffect(() => {
+    dispatch(fetchClaims());
+    dispatch(fetchPatients({}));
+  }, [dispatch]);
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'approved': return <CheckCircle className="h-4 w-4" />;
@@ -31,14 +41,119 @@ export default function Claims() {
     }
   };
 
-  const filteredClaims = selectedStatus === 'all' 
-    ? mockClaims 
-    : mockClaims.filter(claim => claim.status === selectedStatus);
+  const filteredClaims = selectedStatus === 'all'
+    ? claims
+    : claims.filter(claim => claim.status === selectedStatus);
 
-  const totalValue = mockClaims.reduce((sum, claim) => sum + claim.amount, 0);
-  const approvedValue = mockClaims
+  const totalValue = claims.reduce((sum, claim) => sum + claim.charges, 0);
+  const approvedValue = claims
     .filter(claim => claim.status === 'approved')
-    .reduce((sum, claim) => sum + claim.amount, 0);
+    .reduce((sum, claim) => sum + claim.charges, 0);
+  const renderClaims = (claims: Claim[]) => {
+    if (claims.length === 0) {
+      return (
+        <div className="text-center py-12">
+          <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+          <h3 className="text-lg font-semibold mb-2">No Claims Found</h3>
+          <p className="text-muted-foreground">Try adjusting the filters</p>
+        </div>
+      );
+    }
+
+    return claims.map((claim) => {
+      const patient = patients.find(p => p.id === claim.patient_id);
+      return (
+        <Card key={claim.id} className="hover:shadow-md transition-shadow">
+          <CardContent className="p-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-3">
+                <div className="flex items-center space-x-5 ">
+                  <Badge className={`${getStatusColor(claim.status)} gap-2`} >
+                    {getStatusIcon(claim.status)}
+                    {claim.status.replace('-', ' ')}
+                  </Badge>
+                  <span className="text-sm text-muted-foreground">
+                    Claim ID: {claim.id}
+                  </span>
+                </div>
+
+                <div>
+                  <h3 className="text-lg font-semibold">
+                    {patient?.name || 'Unknown Patient'}
+                  </h3>
+                  <p className="text-sm text-muted-foreground">
+                    {countryInfo[patient?.country || 'SA'].flag} {countryInfo[patient?.country || 'SA'].name}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="text-muted-foreground">Amount:</span>
+                    <p className="font-medium">
+                      {claim.charges.toLocaleString()} {"USD"}
+                    </p>
+                  </div>
+                  <div>
+                    <span className="text-muted-foreground">Submitted:</span>
+                    <p className="font-medium">
+                      {new Date(claim.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div>
+                    <span className="text-sm text-muted-foreground">Diagnosis:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {claim.diagnosis.map((dx, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          {dx}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Procedures:</span>
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {claim.procedures.map((proc, idx) => (
+                        <Badge key={idx} variant="secondary" className="text-xs">
+                          {proc}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {claim.denial_reason && (
+                  <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
+                    <div className="flex items-center space-x-2">
+                      <AlertTriangle className="h-4 w-4 text-destructive" />
+                      <span className="text-sm font-medium text-destructive">Denial Reason:</span>
+                    </div>
+                    <p className="text-sm mt-1">{claim.denial_reason}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col space-y-2">
+                {/* <Button variant="ghost" size="sm">View Details</Button> */}
+                {claim.status === 'denied' && (
+                  <Button variant="outline" size="sm" className="text-warning border-warning">
+                    Appeal
+                  </Button>
+                )}
+                {claim.status === 'under-review' && (
+                  <Button variant="outline" size="sm">
+                    Track Progress
+                  </Button>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      );
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -48,10 +163,6 @@ export default function Claims() {
           <h1 className="text-3xl font-bold tracking-tight">Claims Management</h1>
           <p className="text-muted-foreground">Process and track healthcare claims across GCC countries</p>
         </div>
-        <Button>
-          <FileText className="mr-2 h-4 w-4" />
-          Submit New Claim
-        </Button>
       </div>
 
       {/* Stats Overview */}
@@ -62,7 +173,7 @@ export default function Claims() {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{mockClaims.length}</div>
+            <div className="text-2xl font-bold">{claims.length}</div>
             <p className="text-xs text-muted-foreground">Active in system</p>
           </CardContent>
         </Card>
@@ -101,7 +212,7 @@ export default function Claims() {
       </div>
 
       {/* Claims Processing Pipeline */}
-      <Tabs defaultValue="all" className="space-y-6">
+      <Tabs value={selectedStatus} onValueChange={setSelectedStatus} className="space-y-6">
         <div className="flex items-center justify-between">
           <TabsList>
             <TabsTrigger value="all">All Claims</TabsTrigger>
@@ -124,117 +235,24 @@ export default function Claims() {
           </Select>
         </div>
 
-        <TabsContent value="all" className="space-y-4">
-          {filteredClaims.map((claim) => {
-            const patient = mockPatients.find(p => p.id === claim.patientId);
-            return (
-              <Card key={claim.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
-                        <Badge className={getStatusColor(claim.status)}>
-                          {getStatusIcon(claim.status)}
-                          {claim.status.replace('-', ' ')}
-                        </Badge>
-                        <span className="text-sm text-muted-foreground">
-                          Claim ID: {claim.id}
-                        </span>
-                      </div>
-                      
-                      <div>
-                        <h3 className="text-lg font-semibold">
-                          {patient?.name || 'Unknown Patient'}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {countryInfo[patient?.country || 'SA'].flag} {claim.providerName}
-                        </p>
-                      </div>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                        <div>
-                          <span className="text-muted-foreground">Amount:</span>
-                          <p className="font-medium">
-                            {claim.amount.toLocaleString()} {claim.currency}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Submitted:</span>
-                          <p className="font-medium">
-                            {new Date(claim.submissionDate).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Urgency:</span>
-                          <p className="font-medium capitalize">{claim.urgencyLevel}</p>
-                        </div>
-                        <div>
-                          <span className="text-muted-foreground">Expected:</span>
-                          <p className="font-medium">{claim.estimatedProcessingDays} days</p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-2">
-                        <div>
-                          <span className="text-sm text-muted-foreground">Diagnosis:</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {claim.diagnosis.map((dx, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs">
-                                {dx}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                        <div>
-                          <span className="text-sm text-muted-foreground">Procedures:</span>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {claim.procedures.map((proc, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
-                                {proc}
-                              </Badge>
-                            ))}
-                          </div>
-                        </div>
-                      </div>
-
-                      {claim.denialReason && (
-                        <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3">
-                          <div className="flex items-center space-x-2">
-                            <AlertTriangle className="h-4 w-4 text-destructive" />
-                            <span className="text-sm font-medium text-destructive">Denial Reason:</span>
-                          </div>
-                          <p className="text-sm mt-1">{claim.denialReason}</p>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex flex-col space-y-2">
-                      <Button variant="ghost" size="sm">View Details</Button>
-                      {claim.status === 'denied' && (
-                        <Button variant="outline" size="sm" className="text-warning border-warning">
-                          Appeal
-                        </Button>
-                      )}
-                      {claim.status === 'under-review' && (
-                        <Button variant="outline" size="sm">
-                          Track Progress
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        <TabsContent value="all" className="space-y grid md:grid-cols-2 grid-cols-1 gap-5">
+          {renderClaims(filteredClaims)}
         </TabsContent>
 
-        {/* Other tab contents would be similar with filtered data */}
-        <TabsContent value="submitted">
-          <div className="text-center py-12">
-            <FileText className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Submitted Claims</h3>
-            <p className="text-muted-foreground">Claims awaiting initial review</p>
-          </div>
+        <TabsContent value="submitted" className="space-y-4 grid md:grid-cols-2 grid-cols-1">
+          {renderClaims(filteredClaims.filter(claim => claim.status === 'submitted'))}
+        </TabsContent>
+
+        <TabsContent value="under-review" className="space-y-4 grid md:grid-cols-2 grid-cols-1">
+          {renderClaims(filteredClaims.filter(claim => claim.status === 'under-review'))}
+        </TabsContent>
+
+        <TabsContent value="approved" className="space-y-4 grid md:grid-cols-2 grid-cols-1">
+          {renderClaims(filteredClaims.filter(claim => claim.status === 'approved'))}
+        </TabsContent>
+
+        <TabsContent value="denied" className="space-y-4 grid md:grid-cols-2 grid-cols-1">
+          {renderClaims(filteredClaims.filter(claim => claim.status === 'denied'))}
         </TabsContent>
       </Tabs>
     </div>

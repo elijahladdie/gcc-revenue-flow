@@ -9,20 +9,16 @@ import { KPICards } from '@/components/dashboard/KPICards';
 import { RevenueChart } from '@/components/dashboard/RevenueChart';
 import { useAppDispatch, useAppSelector } from '@/store';
 import { fetchAnalytics, refreshAnalytics } from '@/store/slices/analyticsSlice';
-import { fetchPatients } from '@/store/slices/patientsSlice';
-import { fetchClaims } from '@/store/slices/claimsSlice';
-import { fetchPreAuthorizations } from '@/store/slices/preAuthSlice';
 import toast from 'react-hot-toast';
+import { fetchClaims } from '@/store/slices/visitSlice';
 
 export const Dashboard: React.FC = () => {
   const dispatch = useAppDispatch();
   const { data: analytics, loading: analyticsLoading, lastUpdated } = useAppSelector(state => state.analytics);
   const { currentCountry, language } = useAppSelector(state => state.ui);
-  const patientsLoading = useAppSelector(state => state.patients.loading);
-  const claimsLoading = useAppSelector(state => state.claims.loading);
-  const preAuthLoading = useAppSelector(state => state.preAuth.loading);
+  const claimsLoading = useAppSelector(state => state.visit.loading);
 
-  const isLoading = analyticsLoading || patientsLoading || claimsLoading || preAuthLoading;
+  const isLoading = analyticsLoading || claimsLoading;
 
   useEffect(() => {
     // Initial data fetch
@@ -30,9 +26,7 @@ export const Dashboard: React.FC = () => {
       try {
         const results = await Promise.all([
           dispatch(fetchAnalytics(undefined)),
-          dispatch(fetchPatients({})),
-          dispatch(fetchClaims({})),
-          dispatch(fetchPreAuthorizations({})),
+          dispatch(fetchClaims()),
         ]);
         console.log('Dashboard data loaded successfully');
         toast.success('Dashboard data loaded successfully');

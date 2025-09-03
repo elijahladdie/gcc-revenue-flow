@@ -11,12 +11,8 @@ import Patients from './pages/Patients';
 import Claims from './pages/Claims';
 import PreAuthorization from './pages/PreAuthorization';
 import Financial from './pages/Financial';
-import Analytics from './pages/Analytics';
-import Compliance from './pages/Compliance';
-import Trends from './pages/Trends';
-import VerifyEligibility from './pages/VerifyEligibility';
-import ReviewDenials from './pages/ReviewDenials';
 import NotFound from "./pages/NotFound";
+import VisitsManager from "./pages/Visit";
 
 const queryClient = new QueryClient();
 
@@ -32,13 +28,9 @@ const App = () => (
               <Route index element={<Dashboard />} />
               <Route path="patients" element={<Patients />} />
               <Route path="claims" element={<Claims />} />
+              <Route path="visit" element={<VisitsManager />} />
               <Route path="pre-authorization" element={<PreAuthorization />} />
               <Route path="financial" element={<Financial />} />
-              <Route path="analytics" element={<Analytics />} />
-              <Route path="compliance" element={<Compliance />} />
-              <Route path="trends" element={<Trends />} />
-              <Route path="verify-eligibility" element={<VerifyEligibility />} />
-              <Route path="review-denials" element={<ReviewDenials />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
